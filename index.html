@@ -5,13 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
 <title>错季~</title>
 <style>
-  /* 原有样式保留 */
+  /* 背景改为黑色 */
   html,body{
     height:100%;margin:0;overflow:hidden;
     font-family:"微软雅黑",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:
-      radial-gradient(1200px 600px at 50% 45%, rgba(255,255,255,.65), rgba(255,255,255,0) 60%),
-      radial-gradient(circle at 50% 45%, #fff4f7 0%, #c9eaff 100%);
+    background: #000; /* 纯黑色背景 */
   }
   .stage{position:relative;width:100%;height:100%;}
   .msg{
@@ -236,9 +234,21 @@
   .lidong-popup.hidden .popup-content{
     transform:scale(0.9);
   }
+
+  /* Canvas雪花样式 */
+  #snow-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* 不影响页面交互 */
+    z-index: 50; /* 位于背景之上，其他内容之下 */
+  }
 </style>
 </head>
 <body>
+  <!-- Canvas雪花容器 -->
+  <canvas id="snow-canvas"></canvas>
+
   <!-- 立冬快乐弹窗（文字分行显示） -->
   <div class="lidong-popup" id="lidongPopup">
     <div class="popup-content">
@@ -397,6 +407,75 @@ function playAnimation(){
   setTimeout(finalBurst, TOTAL_TIME_MS);
 }
 
+/* Canvas雪花效果实现 - 减慢速度并增加数量 */
+function initSnow() {
+  const canvas = document.getElementById('snow-canvas');
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+
+  // 设置Canvas尺寸
+  canvas.width = width;
+  canvas.height = height;
+
+  // 增加雪花数量（最多800片，比之前更多）
+  const snowCount = Math.min(Math.floor(width * 1.5), 800);
+  const snowflakes = [];
+
+  // 初始化雪花 - 减慢下落速度
+  for (let i = 0; i < snowCount; i++) {
+    snowflakes.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 3 + 1, // 1-4px
+      speedY: Math.random() * 0.8 + 0.3, // 减慢下落速度（0.3-1.1）
+      speedX: Math.random() * 0.6 - 0.3, // 减慢左右摇摆（-0.3-0.3）
+      opacity: Math.random() * 0.7 + 0.3 // 30%-100%不透明度，黑色背景下更清晰
+    });
+  }
+
+  // 绘制雪花动画
+  function drawSnow() {
+    // 清空画布
+    ctx.clearRect(0, 0, width, height);
+
+    snowflakes.forEach(snow => {
+      // 绘制雪花
+      ctx.beginPath();
+      ctx.arc(snow.x, snow.y, snow.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${snow.opacity})`;
+      ctx.fill();
+
+      // 更新位置（下落+摇摆）
+      snow.y += snow.speedY;
+      snow.x += snow.speedX;
+
+      // 雪花超出边界后重新放置到顶部
+      if (snow.y > height) {
+        snow.y = -10;
+        snow.x = Math.random() * width;
+      }
+      // 左右超出边界时反弹
+      if (snow.x < 0 || snow.x > width) {
+        snow.speedX = -snow.speedX;
+      }
+    });
+
+    requestAnimationFrame(drawSnow);
+  }
+
+  // 窗口大小改变时重新调整Canvas
+  window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  });
+
+  // 启动雪花动画
+  drawSnow();
+}
+
 /* 音乐播放器核心逻辑 */
 // 歌曲列表
 const songs = [
@@ -511,6 +590,7 @@ function init() {
   initSongList();
   bindEvents();
   playAnimation();
+  initSnow(); // 初始化雪花效果
 }
 
 // 页面加载后初始化
